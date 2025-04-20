@@ -93,7 +93,7 @@ jobs:
 
       # Step 6: Save the updated list of known pages back to our repository
       - name: Commit updated known URLs for ${{ matrix.config.domain }}
-        if: steps.monitor_script.outputs.new_urls_count > 0
+        if: steps.monitor_script.outputs.new_urls_count < 999999999999
         run: |
           # Configure Git within the robot's environment
           git config --global user.name 'GitHub Action Bot'
