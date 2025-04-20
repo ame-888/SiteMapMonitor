@@ -80,12 +80,16 @@ jobs:
 
       # Step 5: Send a Discord notification ONLY IF new pages were found
       - name: Send Discord Notification for ${{ matrix.config.domain }}
-        #if: steps.monitor_script.outputs.new_urls_count > 0 && env.DISCORD_WEBHOOK_URL != ''
+        if: steps.monitor_script.outputs.new_urls_count > 0 && env.DISCORD_WEBHOOK_URL != ''
         run: |
+          if [ -z "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
+            echo "DISCORD_WEBHOOK_URL is not set. Skipping notification."
+            exit 0
+          fi
           # Add the domain name to the notification for clarity
           curl -H "Content-Type: application/json" \
                -d '{ "content": "**New URLs detected on ${{ matrix.config.domain }}** (${{ env.SITEMAP_URL }}):\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
-               ${{ env.DISCORD_WEBHOOK_URL }}
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       # Step 6: Save the updated list of known pages back to our repository
       - name: Commit updated known URLs for ${{ matrix.config.domain }}
