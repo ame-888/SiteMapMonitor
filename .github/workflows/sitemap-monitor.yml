@@ -27,15 +27,31 @@ jobs:
           - domain: "DeepMind"
             sitemap_url: "https://deepmind.google/sitemap.xml"
             state_file: "known_urls_deepmind.txt"
+          - domain: "GoogleDevAI" # Add your second domain info
+            sitemap_url: "https://ai.google.dev/sitemap.xml" # Change this
+            state_file: "known_urls_googledevai.txt" # Use a unique state file
           - domain: "Llama" # Add your second domain info
             sitemap_url: "https://www.llama.com/sitemap.xml" # Change this
             state_file: "known_urls_llama.txt" # Use a unique state file
+          - domain: "OpenAI" # Add your second domain info
+            sitemap_url: "https://openai.com/sitemap.xml" # Change this
+            state_file: "known_urls_openai.txt" # Use a unique state file
+          - domain: "PletaformOpenAI" # Add your second domain info
+            sitemap_url: "https://platform.openai.com/sitemap.xml" # Change this
+            state_file: "known_urls_platformopenai.txt" # Use a unique state file
+          - domain: "Anthropic" # Add your second domain info
+            sitemap_url: "https://docs.anthropic.com/sitemap.xml" # Change this
+            state_file: "known_urls_anthropic.txt" # Use a unique state file
+          - domain: "MistralAI" # Add your second domain info
+            sitemap_url: "https://docs.mistral.ai/sitemap.xml" # Change this
+            state_file: "known_urls_MistralAI.txt" # Use a unique state file
+          - domain: "Grok" # Add your second domain info
+            sitemap_url: "https://docs.x.ai/sitemap.xml" # Change this
+            state_file: "known_urls_grok.txt" # Use a unique state file
           # Add more entries like the one above for other domains
           # - domain: "AnotherDomain"
           #   sitemap_url: "https://another.net/sitemap_index.xml"
           #   state_file: "known_urls_another.txt"
-
-    # Remove the job-level env for KNOWN_URLS_FILE if you added it before
 
     steps:
       - name: Checkout code
