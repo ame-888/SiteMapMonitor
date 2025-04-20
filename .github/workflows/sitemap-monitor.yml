@@ -89,7 +89,7 @@ jobs:
           # Add the domain name to the notification for clarity
           curl -H "Content-Type: application/json" \
                -d '{ "content": "**New URLs detected on ${{ matrix.config.domain }}** (${{ env.SITEMAP_URL }}):\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
-               ${{ secrets.DISCORD_WEBHOOK_URL }}
+               ${{ env.DISCORD_WEBHOOK_URL }}
 
       # Step 6: Save the updated list of known pages back to our repository
       - name: Commit updated known URLs for ${{ matrix.config.domain }}
