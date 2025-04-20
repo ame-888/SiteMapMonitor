@@ -1,12 +1,10 @@
 # Simple name for this automated task
-name: Sitemap Monitor (Multiple Domains) # Updated name for clarity
+name: Sitemap Monitor (Multiple Domains)
 
 # --- When to run this task ---
 on:
   schedule:
     # Runs automatically. This example runs every hour at the start of the hour.
-    # You can change the schedule - use https://crontab.guru/ to help
-    # Be mindful of GitHub's free limits if you make it run very often.
     - cron: '0 * * * *'
   # Allows you to run it manually from the GitHub Actions tab
   workflow_dispatch:
@@ -19,7 +17,6 @@ jobs:
   monitor:
     # Use a standard virtual computer provided by GitHub
     runs-on: ubuntu-latest
-    # Removed the job-level KNOWN_URLS_FILE env, as it's now handled by the matrix state_file
     strategy:
       fail-fast: false # Allows other domains to continue if one fails
       matrix:
@@ -36,7 +33,7 @@ jobs:
           - domain: "OpenAI"
             sitemap_url: "https://openai.com/sitemap.xml"
             state_file: "known_urls_openai.txt"
-          - domain: "PlatformOpenAI" # Corrected capitalization consistency
+          - domain: "PlatformOpenAI"
             sitemap_url: "https://platform.openai.com/sitemap.xml"
             state_file: "known_urls_platformopenai.txt"
           - domain: "Anthropic"
@@ -44,7 +41,7 @@ jobs:
             state_file: "known_urls_anthropic.txt"
           - domain: "MistralAI"
             sitemap_url: "https://docs.mistral.ai/sitemap.xml"
-            state_file: "known_urls_MistralAI.txt" # Consider lowercase: known_urls_mistralai.txt
+            state_file: "known_urls_MistralAI.txt"
           - domain: "Grok"
             sitemap_url: "https://docs.x.ai/sitemap.xml"
             state_file: "known_urls_grok.txt"
@@ -53,56 +50,55 @@ jobs:
           #   sitemap_url: "https://another.net/sitemap_index.xml"
           #   state_file: "known_urls_another.txt"
 
-    steps: # <--- THIS is the correct steps block, indented under 'monitor:'
+    steps: # <<< Correctly indented under 'monitor:'
       # Step 1: Get a copy of our repository code
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout code # <<< Correctly indented under 'steps:' (2 spaces)
+        uses: actions/checkout@v3 # <<< Correctly indented under '- name:' (4 spaces)
 
       # Step 2: Set up the Python language environment
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+      - name: Set up Python # <<< Correctly indented under 'steps:'
+        uses: actions/setup-python@v4 # <<< Correctly indented under '- name:'
+        with: # <<< Correctly indented under '- name:'
+          python-version: '3.x' # <<< Correctly indented under 'with:'
 
       # Step 3: Install the tools our Python script needs
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4 lxml
+      - name: Install dependencies # <<< Correctly indented under 'steps:'
+        run: pip install requests beautifulsoup4 lxml # <<< Correctly indented under '- name:'
 
       # Step 4: Run our custom Python script for the current domain
-      - name: Run monitoring script for ${{ matrix.config.domain }}
-        id: monitor_script
-        env:
+      - name: Run monitoring script for ${{ matrix.config.domain }} # <<< Correctly indented under 'steps:'
+        id: monitor_script # <<< Correctly indented under '- name:'
+        env: # <<< Correctly indented under '- name:'
           # Use matrix variables here
-          SITEMAP_URL: ${{ matrix.config.sitemap_url }}
-          KNOWN_URLS_FILE: ${{ matrix.config.state_file }} # Use the state_file from matrix
+          SITEMAP_URL: ${{ matrix.config.sitemap_url }} # <<< Correctly indented under 'env:'
+          KNOWN_URLS_FILE: ${{ matrix.config.state_file }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
-        run: python monitor_script.py
+        run: python monitor_script.py # <<< Correctly indented under '- name:'
 
-      # Step 5: Send a Discord notification ONLY IF new pages were found
-      - name: Send Discord Notification for ${{ matrix.config.domain }}
+      # Step 5: Send a Discord notification (Force run for testing)
+      - name: Send Discord Notification for ${{ matrix.config.domain }} # <<< Correctly indented under 'steps:'
+        # TEMPORARILY CHANGED condition to test Discord sending
+        # It will run even if count is 0, as long as the webhook URL is set.
         if: steps.monitor_script.outputs.new_urls_count < 999999999999 && env.DISCORD_WEBHOOK_URL != ''
-            echo "DISCORD_WEBHOOK_URL is not set. Skipping notification."
-            exit 0
-          fi
+        run: | # <<< Correctly indented under '- name:'
           # Add the domain name to the notification for clarity
+          # The message might look empty if new_urls_list is blank, but it tests the sending
           curl -H "Content-Type: application/json" \
-               -d '{ "content": "**New URLs detected on ${{ matrix.config.domain }}** (${{ env.SITEMAP_URL }}):\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
-               ${{ env.DISCORD_WEBHOOK_URL }}
+               -d '{ "content": "**[TEST RUN] URLs detected on ${{ matrix.config.domain }}** (${{ env.SITEMAP_URL }}):\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
+               ${{ env.DISCORD_WEBHOOK_URL }} # Use the env variable set in Step 4
 
       # Step 6: Save the updated list of known pages back to our repository
-      - name: Commit updated known URLs for ${{ matrix.config.domain }}
-        if: steps.monitor_script.outputs.new_urls_count < 999999999999
-        run: |
+      - name: Commit updated known URLs for ${{ matrix.config.domain }} # <<< Correctly indented under 'steps:'
+        # ONLY run if new URLs were actually found (original logic)
+        if: steps.monitor_script.outputs.new_urls_count > 0
+        run: | # <<< Correctly indented under '- name:'
           # Configure Git within the robot's environment
           git config --global user.name 'GitHub Action Bot'
           git config --global user.email 'action@github.com'
           # Use the matrix variable for the state file name
           echo "Adding file: ${{ matrix.config.state_file }}"
-          git add ${{ matrix.config.state_file }} # Use the state_file from matrix
+          git add ${{ matrix.config.state_file }}
           # Add domain to commit message for clarity
           git commit -m "Update known URLs for ${{ matrix.config.domain }}" || echo "No changes to commit"
           # Push the changes back to your GitHub repository
           git push || echo "Push failed (maybe no changes or conflict)"
-
-# --- The entire second 'steps:' block below this line has been REMOVED ---
-# --- because it was duplicated and causing the syntax error ---
