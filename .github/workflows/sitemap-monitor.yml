@@ -18,6 +18,8 @@ jobs:
   monitor:
     # Use a standard virtual computer provided by GitHub
     runs-on: ubuntu-latest
+    env:
+      KNOWN_URLS_FILE: known_urls.txt # The file where we store the list of pages we already know
     steps:
       # Step 1: Get a copy of our repository code (including the Python script we'll add later)
       - name: Checkout code
@@ -39,7 +41,6 @@ jobs:
         env:
           # <<< --- IMPORTANT: CHANGE THIS URL --- >>>
           SITEMAP_URL: "https://deepmind.google/sitemap.xml" # <<< Paste the ACTUAL sitemap URL you found in Step 2 here!
-          KNOWN_URLS_FILE: known_urls.txt # The file where we store the list of pages we already know
           # We will set up the Discord Webhook URL using GitHub Secrets later for security
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
         run: python monitor_script.py # Tell it to run the Python file we'll create next
