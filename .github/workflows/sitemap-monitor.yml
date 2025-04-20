@@ -20,55 +20,112 @@ jobs:
     runs-on: ubuntu-latest
     env:
       KNOWN_URLS_FILE: known_urls.txt # The file where we store the list of pages we already know
+    strategy:
+      fail-fast: false # Allows other domains to continue if one fails
+      matrix:
+        config:
+          - domain: "DeepMind"
+            sitemap_url: "https://deepmind.google/sitemap.xml"
+            state_file: "known_urls_deepmind.txt"
+          - domain: "Llama" # Add your second domain info
+            sitemap_url: "https://www.llama.com/sitemap.xml" # Change this
+            state_file: "known_urls_llama.txt" # Use a unique state file
+          # Add more entries like the one above for other domains
+          # - domain: "AnotherDomain"
+          #   sitemap_url: "https://another.net/sitemap_index.xml"
+          #   state_file: "known_urls_another.txt"
+
+    # Remove the job-level env for KNOWN_URLS_FILE if you added it before
+
     steps:
-      # Step 1: Get a copy of our repository code (including the Python script we'll add later)
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up the Python language environment
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x' # Use a recent version of Python 3
+          python-version: '3.x'
 
-      # Step 3: Install the tools our Python script needs
       - name: Install dependencies
-        run: pip install requests beautifulsoup4 lxml # Tools to fetch web pages and read sitemaps
+        run: pip install requests beautifulsoup4 lxml
 
-      # Step 4: Run our custom Python script (the brain of the operation)
-      - name: Run monitoring script
-        id: monitor_script # Give this step an ID so we can refer to its results
+      - name: Run monitoring script for ${{ matrix.config.domain }} # Use matrix variable in step name
+        id: monitor_script
         env:
-          # <<< --- IMPORTANT: CHANGE THIS URL --- >>>
-          SITEMAP_URL: "https://deepmind.google/sitemap.xml" # <<< Paste the ACTUAL sitemap URL you found in Step 2 here!
-          # We will set up the Discord Webhook URL using GitHub Secrets later for security
+          # Use matrix variables here
+          SITEMAP_URL: ${{ matrix.config.sitemap_url }}
+          KNOWN_URLS_FILE: ${{ matrix.config.state_file }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
-        run: python monitor_script.py # Tell it to run the Python file we'll create next
+        run: python monitor_script.py
 
-      # Step 5: Send a Discord notification ONLY IF new pages were found
-      - name: Send Discord Notification
-        # Condition: Only run if the Python script found new URLs (count > 0) AND a Discord webhook URL is configured
+      - name: Send Discord Notification for ${{ matrix.config.domain }} # Use matrix variable in step name
         if: steps.monitor_script.outputs.new_urls_count > 0 && env.DISCORD_WEBHOOK_URL != ''
         run: |
-          # Use 'curl' (a command-line tool) to send a message to the Discord webhook
-          # The message includes the list of new URLs found by the Python script
+          # Add the domain name to the notification for clarity
           curl -H "Content-Type: application/json" \
-               -d '{ "content": "**New URLs detected on ${{ env.SITEMAP_URL }}**:\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
+               -d '{ "content": "**New URLs detected on ${{ matrix.config.domain }}** (${{ env.SITEMAP_URL }}):\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
                ${{ env.DISCORD_WEBHOOK_URL }}
 
-      # Step 6: Save the updated list of known pages back to our repository
-      - name: Commit updated known URLs
-        # Condition: Only run if the Python script actually found new URLs
+      - name: Commit updated known URLs for ${{ matrix.config.domain }} # Use matrix variable in step name
         if: steps.monitor_script.outputs.new_urls_count > 0
         run: |
-          # Configure Git within the robot's environment
           git config --global user.name 'GitHub Action Bot'
           git config --global user.email 'action@github.com'
-          # Add the file containing the list of URLs to Git's tracking
-          git add ${{ env.KNOWN_URLS_FILE }}
-          # Create a commit message (a record of the change)
-          # The '|| echo' prevents errors if the file didn't actually change (shouldn't happen if count > 0, but safe)
-          git commit -m "Update known URLs from sitemap" || echo "No changes to commit"
-          # Push the changes back to your GitHub repository
-          # The '|| echo' prevents errors if the push fails (e.g., simultaneous runs, though unlikely here)
+          # Use the matrix variable for the state file name
+          echo "Adding file: ${{ matrix.config.state_file }}"
+          git add ${{ matrix.config.state_file }}
+          # Add domain to commit message for clarity
+          git commit -m "Update known URLs for ${{ matrix.config.domain }}" || echo "No changes to commit"
           git push || echo "Push failed (maybe no changes or conflict)"
+  steps:
+      # Step 1: Get a copy of our repository code (including the Python script we'll add later)
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+        # Step 2: Set up the Python language environment
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x' # Use a recent version of Python 3
+
+        # Step 3: Install the tools our Python script needs
+    - name: Install dependencies
+      run: pip install requests beautifulsoup4 lxml # Tools to fetch web pages and read sitemaps
+
+        # Step 4: Run our custom Python script (the brain of the operation)
+    - name: Run monitoring script
+      id: monitor_script # Give this step an ID so we can refer to its results
+      env:
+        # <<< --- IMPORTANT: CHANGE THIS URL --- >>>
+        SITEMAP_URL: "https://deepmind.google/sitemap.xml" # <<< Paste the ACTUAL sitemap URL you found in Step 2 here!
+        # We will set up the Discord Webhook URL using GitHub Secrets later for security
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
+      run: python monitor_script.py # Tell it to run the Python file we'll create next
+
+        # Step 5: Send a Discord notification ONLY IF new pages were found
+    - name: Send Discord Notification
+      # Condition: Only run if the Python script found new URLs (count > 0) AND a Discord webhook URL is configured
+      if: steps.monitor_script.outputs.new_urls_count > 0 && env.DISCORD_WEBHOOK_URL != ''
+      run: |
+        # Use 'curl' (a command-line tool) to send a message to the Discord webhook
+        # The message includes the list of new URLs found by the Python script
+        curl -H "Content-Type: application/json" \
+             -d '{ "content": "**New URLs detected on ${{ env.SITEMAP_URL }}**:\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
+             ${{ env.DISCORD_WEBHOOK_URL }}
+  
+        # Step 6: Save the updated list of known pages back to our repository
+    - name: Commit updated known URLs
+      # Condition: Only run if the Python script actually found new URLs
+      if: steps.monitor_script.outputs.new_urls_count > 0
+      run: |
+        # Configure Git within the robot's environment
+        git config --global user.name 'GitHub Action Bot'
+        git config --global user.email 'action@github.com'
+        # Add the file containing the list of URLs to Git's tracking
+        git add ${{ env.KNOWN_URLS_FILE }}
+        # Create a commit message (a record of the change)
+        # The '|| echo' prevents errors if the file didn't actually change (shouldn't happen if count > 0, but safe)
+        git commit -m "Update known URLs from sitemap" || echo "No changes to commit"
+        # Push the changes back to your GitHub repository
+        # The '|| echo' prevents errors if the push fails (e.g., simultaneous runs, though unlikely here)
+        git push || echo "Push failed (maybe no changes or conflict)"
