@@ -29,7 +29,7 @@ def fetch_sitemap_urls(url):
     try:
         # Wait a tiny bit before making the request
         time.sleep(1)
-        response = requests.get(url, headers=headers, timeout=45) # Allow 45 seconds to get response
+        response = requests.get(url, headers=headers, timeout=250) # Allow 250 seconds to get response
         response.raise_for_status() # Check if the request was successful (status code 200 OK)
         print(f"Successfully fetched: {url} (Status: {response.status_code})")
 
