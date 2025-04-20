@@ -80,9 +80,7 @@ jobs:
 
       # Step 5: Send a Discord notification ONLY IF new pages were found
       - name: Send Discord Notification for ${{ matrix.config.domain }}
-        if: steps.monitor_script.outputs.new_urls_count > 0 && env.DISCORD_WEBHOOK_URL != ''
-        run: |
-          if [ -z "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
+        if: steps.monitor_script.outputs.new_urls_count < 999999999999 && env.DISCORD_WEBHOOK_URL != ''
             echo "DISCORD_WEBHOOK_URL is not set. Skipping notification."
             exit 0
           fi
