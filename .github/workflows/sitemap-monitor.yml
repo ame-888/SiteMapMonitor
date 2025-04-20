@@ -82,7 +82,7 @@ jobs:
       # Step 5: Send a Discord notification (Force run for testing)
       - name: Send Discord Notification for ${{ matrix.config.domain }}
         # TEMPORARY TEST CONDITION: Runs even if count is 0
-        if: steps.monitor_script.outputs.new_urls_count < 999999999999 && env.JOB_DISCORD_WEBHOOK_URL != ''
+        if: steps.monitor_script.outputs.new_urls_count > 0 && env.JOB_DISCORD_WEBHOOK_URL != ''
         run: |
           # Add the domain name to the notification for clarity
           curl -H "Content-Type: application/json" \
