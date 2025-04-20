@@ -49,49 +49,51 @@ jobs:
           # - domain: "AnotherDomain"
           #   sitemap_url: "https://another.net/sitemap_index.xml"
           #   state_file: "known_urls_another.txt"
+    env:
+      # Make the webhook URL available to all steps in this job
+       JOB_DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
 
-    steps: # <<< Correctly indented under 'monitor:'
+    steps:
       # Step 1: Get a copy of our repository code
-      - name: Checkout code # <<< Correctly indented under 'steps:' (2 spaces)
-        uses: actions/checkout@v3 # <<< Correctly indented under '- name:' (4 spaces)
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       # Step 2: Set up the Python language environment
-      - name: Set up Python # <<< Correctly indented under 'steps:'
-        uses: actions/setup-python@v4 # <<< Correctly indented under '- name:'
-        with: # <<< Correctly indented under '- name:'
-          python-version: '3.x' # <<< Correctly indented under 'with:'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
       # Step 3: Install the tools our Python script needs
-      - name: Install dependencies # <<< Correctly indented under 'steps:'
-        run: pip install requests beautifulsoup4 lxml # <<< Correctly indented under '- name:'
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 lxml
 
-      # Step 4: Run our custom Python script for the current domain
-      - name: Run monitoring script for ${{ matrix.config.domain }} # <<< Correctly indented under 'steps:'
-        id: monitor_script # <<< Correctly indented under '- name:'
-        env: # <<< Correctly indented under '- name:'
+      # Step 4: Run monitoring script
+      - name: Run monitoring script for ${{ matrix.config.domain }}
+        id: monitor_script
+        env:
           # Use matrix variables here
-          SITEMAP_URL: ${{ matrix.config.sitemap_url }} # <<< Correctly indented under 'env:'
+          SITEMAP_URL: ${{ matrix.config.sitemap_url }}
           KNOWN_URLS_FILE: ${{ matrix.config.state_file }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
-        run: python monitor_script.py # <<< Correctly indented under '- name:'
+          # Pass the job-level env var TO the script if the script needs it
+          DISCORD_WEBHOOK_URL: ${{ env.JOB_DISCORD_WEBHOOK_URL }}
+        run: python monitor_script.py
 
       # Step 5: Send a Discord notification (Force run for testing)
-      - name: Send Discord Notification for ${{ matrix.config.domain }} # <<< Correctly indented under 'steps:'
-        # TEMPORARILY CHANGED condition to test Discord sending
-        # It will run even if count is 0, as long as the webhook URL is set.
-        if: steps.monitor_script.outputs.new_urls_count < 999999999999 && env.DISCORD_WEBHOOK_URL != ''
-        run: | # <<< Correctly indented under '- name:'
+      - name: Send Discord Notification for ${{ matrix.config.domain }}
+        # TEMPORARY TEST CONDITION: Runs even if count is 0
+        if: steps.monitor_script.outputs.new_urls_count < 999999999999 && env.JOB_DISCORD_WEBHOOK_URL != ''
+        run: |
           # Add the domain name to the notification for clarity
-          # The message might look empty if new_urls_list is blank, but it tests the sending
           curl -H "Content-Type: application/json" \
                -d '{ "content": "**[TEST RUN] URLs detected on ${{ matrix.config.domain }}** (${{ env.SITEMAP_URL }}):\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
-               ${{ env.DISCORD_WEBHOOK_URL }} # Use the env variable set in Step 4
+               ${{ env.JOB_DISCORD_WEBHOOK_URL }} # Use the job-level env variable
 
-      # Step 6: Save the updated list of known pages back to our repository
-      - name: Commit updated known URLs for ${{ matrix.config.domain }} # <<< Correctly indented under 'steps:'
-        # ONLY run if new URLs were actually found (original logic)
+      # Step 6: Commit updated known URLs (Use original condition)
+      - name: Commit updated known URLs for ${{ matrix.config.domain }}
+        # ONLY run if new URLs were actually found
         if: steps.monitor_script.outputs.new_urls_count > 0
-        run: | # <<< Correctly indented under '- name:'
+        run: |
           # Configure Git within the robot's environment
           git config --global user.name 'GitHub Action Bot'
           git config --global user.email 'action@github.com'
