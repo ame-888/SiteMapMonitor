@@ -3,6 +3,7 @@ import requests # For fetching web pages
 from bs4 import BeautifulSoup # For reading sitemap (XML/HTML) files
 import sys
 import time # To add a small delay
+import uuid # To create a unique delimiter for multiline output
 
 # --- Configuration ---
 # Get settings from the environment variables set in the workflow file
@@ -11,7 +12,7 @@ KNOWN_URLS_FILE = os.environ.get("KNOWN_URLS_FILE", "known_urls.txt") # Default 
 
 # <<< --- Polite User Agent --- >>>
 # Identify our script politely to the website owner (optional but good practice)
-# You can change 'ame-888/SiteMapMonitor' to your actual GitHub username and repo name
+# You can change 'your_username/your_repo' to your actual GitHub username and repo name
 USER_AGENT = "GitHubActionsSitemapMonitor/1.0 (+https://github.com/your_username/your_repo)"
 
 # --- Helper Functions ---
@@ -119,13 +120,13 @@ if __name__ == "__main__":
     print(f"\nFetching current URLs from entry point: {SITEMAP_URL}")
     current_urls = fetch_sitemap_urls(SITEMAP_URL)
 
+    # Initialize output variables
+    new_urls_count_output = 0
+    raw_new_urls_list_str = "" # This will hold the raw multiline string
+
     if not current_urls:
         print("\nWarning: Failed to fetch any URLs from the sitemap(s).", file=sys.stderr)
-        # If fetching fails completely, we should NOT wipe the known URLs.
-        # We'll skip the comparison and saving steps to preserve the last known state.
         print("Skipping comparison and saving to avoid data loss.")
-        new_urls_list_output = ""
-        new_urls_count_output = 0
     else:
         print(f"\nSuccessfully fetched a total of {len(current_urls)} unique URLs.")
         # 3. Compare: Find URLs in `current_urls` that are NOT in `known_urls`
@@ -133,8 +134,7 @@ if __name__ == "__main__":
         new_urls_count = len(new_urls)
         print(f"\nComparison complete. Found {new_urls_count} new URL(s).")
 
-        # Prepare output for GitHub Actions (used in later steps like notification and commit)
-        new_urls_count_output = new_urls_count
+        new_urls_count_output = new_urls_count # Store the count for output
 
         if new_urls_count > 0:
             print("\nNew URLs found:")
@@ -146,28 +146,52 @@ if __name__ == "__main__":
             # Limit the list length for the notification message to avoid being too long
             max_urls_in_notification = 50
             limited_new_urls = sorted_new_urls[:max_urls_in_notification]
-            new_urls_list_output = "\n".join(limited_new_urls)
+            raw_new_urls_list_str = "\n".join(limited_new_urls) # Create the basic list string
             if new_urls_count > max_urls_in_notification:
-                new_urls_list_output += f"\n...and {new_urls_count - max_urls_in_notification} more."
-
-            # Escape special characters for the GitHub Actions output variable
-            new_urls_list_output = new_urls_list_output.replace('%', '%25').replace('\n', '%0A').replace('\r', '%0D')
+                raw_new_urls_list_str += f"\n...and {new_urls_count - max_urls_in_notification} more."
 
             # 4. Save the *complete current* list for the next run
             save_known_urls(KNOWN_URLS_FILE, current_urls)
         else:
             print("\nNo new URLs detected since the last check.")
-            new_urls_list_output = ""
             # Save the list even if no changes, to ensure the file exists if it was the first run
-            if not os.path.exists(KNOWN_URLS_FILE):
+            if not os.path.exists(KNOWN_URLS_FILE) and current_urls: # Only save if we actually got URLs
                  print(f"Saving initial URL list to {KNOWN_URLS_FILE}")
                  save_known_urls(KNOWN_URLS_FILE, current_urls)
 
+    # ---- NEW PART: Write outputs to GITHUB_OUTPUT file ----
+    print(f"\nSetting GitHub Actions outputs using GITHUB_OUTPUT...")
+    github_output_file = os.environ.get('GITHUB_OUTPUT')
 
-    # Set output variables for GitHub Actions workflow
-    # These lines communicate results back to the .yml file
-    print(f"\nSetting GitHub Actions outputs...")
-    print(f"::set-output name=new_urls_count::{new_urls_count_output}")
-    print(f"::set-output name=new_urls_list::{new_urls_list_output}")
+    if github_output_file:
+        try:
+            # Generate a unique delimiter for the multiline output
+            # Using UUID ensures it won't clash with content
+            delimiter = f"EOF_{uuid.uuid4()}"
+
+            with open(github_output_file, 'a', encoding='utf-8') as f:
+                # Write the simple count output
+                f.write(f"new_urls_count={new_urls_count_output}\n")
+
+                # Write the potentially multiline list output
+                f.write(f"new_urls_list<<{delimiter}\n") # Start marker
+                f.write(f"{raw_new_urls_list_str}\n")   # The actual content
+                f.write(f"{delimiter}\n")               # End marker
+
+            print("Successfully wrote outputs to GITHUB_OUTPUT.")
+
+        except Exception as e:
+            print(f"Error: Failed to write to GITHUB_OUTPUT file '{github_output_file}'. Reason: {e}", file=sys.stderr)
+            # If writing output fails, the workflow might not behave as expected later
+            # Try to print old style as a fallback (might still show deprecation warning)
+            print(f"::set-output name=new_urls_count::{new_urls_count_output}")
+            print(f"::set-output name=new_urls_list::FALLBACK_CHECK_LOGS")
+
+    else:
+        print("Warning: GITHUB_OUTPUT environment variable not found. Cannot set outputs using environment file method.", file=sys.stderr)
+        # Fallback to old method if GITHUB_OUTPUT isn't set (shouldn't happen in normal Actions run)
+        print(f"::set-output name=new_urls_count::{new_urls_count_output}")
+        print(f"::set-output name=new_urls_list::FALLBACK_CHECK_LOGS")
+
 
     print("\n--- Sitemap Monitor Script Finished ---")
