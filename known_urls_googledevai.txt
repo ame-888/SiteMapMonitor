@@ -61670,6 +61670,7 @@ https://ai.google.dev/gemma/gemmaverse?hl=tr
 https://ai.google.dev/gemma/gemmaverse?hl=vi
 https://ai.google.dev/gemma/gemmaverse?hl=zh-CN
 https://ai.google.dev/gemma/gemmaverse?hl=zh-TW
+https://ai.google.dev/gemma/intended_use_statement
 https://ai.google.dev/gemma/prohibited_use_policy
 https://ai.google.dev/gemma/terms
 https://ai.google.dev/gemma/terms-archive
