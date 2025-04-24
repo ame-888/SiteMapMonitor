@@ -199,6 +199,7 @@ https://deepmind.google/discover/blog/measuring-abstract-reasoning-in-neural-net
 https://deepmind.google/discover/blog/measuring-perception-in-ai-models/
 https://deepmind.google/discover/blog/melting-pot-an-evaluation-suite-for-multi-agent-reinforcement-learning/
 https://deepmind.google/discover/blog/millions-of-new-materials-discovered-with-deep-learning/
+https://deepmind.google/discover/blog/music-ai-sandbox-now-with-new-features-and-broader-access/
 https://deepmind.google/discover/blog/muzero-alphazero-and-alphadev-optimizing-computer-systems/
 https://deepmind.google/discover/blog/muzero-mastering-go-chess-shogi-and-atari-without-rules/
 https://deepmind.google/discover/blog/muzeros-first-step-from-research-into-the-real-world/
@@ -586,6 +587,14 @@ https://deepmind.google/technologies/gemini/pro/
 https://deepmind.google/technologies/gemini/ultra/
 https://deepmind.google/technologies/imagen-2/
 https://deepmind.google/technologies/imagen-3/
+https://deepmind.google/technologies/lyria/
+https://deepmind.google/technologies/lyria/epic-orchestral/
+https://deepmind.google/technologies/lyria/hazy-uk-garage/
+https://deepmind.google/technologies/lyria/hybrid-film-score/
+https://deepmind.google/technologies/lyria/jazz/
+https://deepmind.google/technologies/lyria/psychedelic-cumbia/
+https://deepmind.google/technologies/lyria/realtime/
+https://deepmind.google/technologies/lyria/sinti-jazz/
 https://deepmind.google/technologies/project-astra/
 https://deepmind.google/technologies/project-astra/memory/
 https://deepmind.google/technologies/project-astra/real-time-conversation/
