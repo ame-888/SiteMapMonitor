@@ -13,7 +13,7 @@ from urllib.parse import urljoin, urlparse
 # --- Configuration ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 REQUEST_TIMEOUT = 30  # seconds
-USER_AGENT = "GitHubActions Sitemap & Content Monitor (https://github.com/YOUR_USERNAME/YOUR_REPO)" # Customize this!
+USER_AGENT = "GitHubActions Sitemap & Content Monitor (https://github.com/ame-888/SiteMapMonitor)" # Customize this!
 MAX_OUTPUT_LIST_ITEMS = 20 # Limit list length in output for brevity
 
 # --- GitHub Actions Output Helper ---
