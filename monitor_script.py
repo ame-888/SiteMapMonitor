@@ -24,15 +24,12 @@ def set_output(name, value):
          print(f"{name}={value}", file=fh)
 
 def format_output_list(items):
-    """Formats a list for output, limiting length and escaping."""
+    """Formats a list for output, escaping newlines."""
     if not items:
         return ""
-    # Limit the number of items
-    limited_items = items[:MAX_OUTPUT_LIST_ITEMS]
-    # Basic escaping for multiline output (replace newline)
-    formatted = "\\n".join([str(item).replace('\n', ' ').replace('\r', '') for item in limited_items])
-    if len(items) > MAX_OUTPUT_LIST_ITEMS:
-        formatted += f"\\n... and {len(items) - MAX_OUTPUT_LIST_ITEMS} more"
+    # Just join items, replacing literal newlines within an item
+    # Use the GitHub Actions multiline output format by joining with '\n' (escaped in bash later)
+    formatted = "\\n".join([str(item).replace('\n', ' ').replace('\r', '') for item in items])
     return formatted
 
 # --- State Handling ---
