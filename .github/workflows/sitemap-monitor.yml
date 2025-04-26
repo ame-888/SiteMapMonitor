@@ -1,5 +1,5 @@
-# Simple name for this automated task
-name: Sitemap Monitor (Multiple Domains)
+# Comprehensive AI Website Monitor
+name: AI Website Monitor (Sitemap, Content, Assets, GitHub, Feeds)
 
 # --- When to run this task ---
 on:
@@ -15,92 +15,227 @@ permissions:
 # --- What jobs to run ---
 jobs:
   monitor:
-    # Use a standard virtual computer provided by GitHub
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Allows other domains to continue if one fails
       matrix:
         config:
-          - domain: "DeepMind"
-            sitemap_url: "https://deepmind.google/sitemap.xml"
-            state_file: "known_urls_deepmind.txt"
-          - domain: "GoogleDevAI"
-            sitemap_url: "https://ai.google.dev/sitemap.xml"
-            state_file: "known_urls_googledevai.txt"
-          - domain: "Llama"
-            sitemap_url: "https://www.llama.com/sitemap.xml" # Note: Ensure this sitemap exists
-            state_file: "known_urls_llama.txt"
+          # --- OpenAI ---
           - domain: "OpenAI"
+            state_file: "state_openai.json" # Using JSON for richer state
             sitemap_url: "https://openai.com/sitemap.xml"
-            state_file: "known_urls_openai.txt"
-          - domain: "PlatformOpenAI"
-            sitemap_url: "https://platform.openai.com/sitemap.xml"
-            state_file: "known_urls_platformopenai.txt"
+            key_pages_selectors: # Format: "URL|CSS Selector for main content"
+              - "https://openai.com/blog|main" # Monitor the main blog feed container
+              - "https://openai.com/pricing|main" # Monitor pricing page content
+              - "https://platform.openai.com/docs/models|main" # Monitor models documentation page
+            asset_monitor_pages: # Pages where we check for new JS/CSS assets
+              - "https://platform.openai.com/"
+            github_repos: # Format: "owner/repo"
+              - "openai/openai-python"
+              - "openai/openai-cookbook"
+            research_feeds: # RSS/Atom feed URLs
+              - "https://openai.com/research/rss.xml"
+
+          # --- Google AI / DeepMind ---
+          - domain: "GoogleAI_DeepMind"
+            state_file: "state_googleai_deepmind.json"
+            sitemap_url: "https://deepmind.google/sitemap.xml" # DeepMind Site
+            # Note: ai.google.dev sitemap might be included or separate
+            key_pages_selectors:
+              - "https://deepmind.google/discover/blog|main"
+              - "https://ai.google.dev/blog|main" # Google AI Dev Blog
+              - "https://ai.google.dev/docs|main" # Google AI Dev Docs root
+            asset_monitor_pages:
+              - "https://ai.google.dev/"
+            github_repos:
+              - "google-deepmind/graphcast" # Example DeepMind repo
+              - "google-gemini/generative-ai-python" # Example Google AI repo
+            research_feeds:
+              - "https://deepmind.google/discover/blog.rss"
+              - "https://developers.googleblog.com/feeds/posts/default/-/AI%20%26%20Machine%20Learning" # Google Dev Blog AI Tag Feed
+
+          # --- Anthropic ---
           - domain: "Anthropic"
+            state_file: "state_anthropic.json"
             sitemap_url: "https://docs.anthropic.com/sitemap.xml"
-            state_file: "known_urls_anthropic.txt"
+            key_pages_selectors:
+              - "https://docs.anthropic.com/claude/reference/getting-started-with-the-api|main" # API Docs Example
+              - "https://www.anthropic.com/news|div[role='list']" # News page list container
+            asset_monitor_pages:
+              - "https://console.anthropic.com/" # Check assets on the console login/app page
+            github_repos:
+              - "anthropics/anthropic-sdk-python"
+            research_feeds: [] # Add if they create a research feed
+
+          # --- Meta (Llama) ---
+          # Note: Llama.com sitemap may not exist or be useful; focus on other Meta AI sources
+          - domain: "MetaAI_Llama"
+            state_file: "state_metaai_llama.json"
+            sitemap_url: "https://ai.meta.com/blog/sitemap-posts.xml" # Meta AI Blog Sitemap
+            key_pages_selectors:
+              - "https://ai.meta.com/blog/|main"
+              - "https://ai.meta.com/research/publications/|main" # Research pubs page
+              - "https://llama.meta.com/docs/get-started/|main" # Llama docs example
+            asset_monitor_pages:
+              - "https://llama.meta.com/"
+            github_repos:
+              - "meta-llama/llama"
+              - "facebookresearch/llama-recipes"
+            research_feeds:
+              - "https://ai.meta.com/blog/rss/"
+
+          # --- Mistral AI ---
           - domain: "MistralAI"
+            state_file: "state_mistralai.json"
             sitemap_url: "https://docs.mistral.ai/sitemap.xml"
-            state_file: "known_urls_MistralAI.txt"
-          - domain: "Grok"
-            sitemap_url: "https://docs.x.ai/sitemap.xml"
-            state_file: "known_urls_grok.txt"
-          # Add more entries like the one above for other domains
-          # - domain: "AnotherDomain"
-          #   sitemap_url: "https://another.net/sitemap_index.xml"
-          #   state_file: "known_urls_another.txt"
+            key_pages_selectors:
+              - "https://mistral.ai/news/|main" # Mistral News
+              - "https://docs.mistral.ai/getting-started/quickstart/|main" # Docs example
+            asset_monitor_pages:
+              - "https://console.mistral.ai/" # Check assets on console
+            github_repos:
+              - "mistralai/mistral-src" # Main models repo
+              - "mistralai/client-python" # Python client
+            research_feeds: [] # Add if available
+
+          # --- Grok (xAI) ---
+          - domain: "Grok_xAI"
+            state_file: "state_grok_xai.json"
+            sitemap_url: "https://docs.x.ai/sitemap.xml" # Docs sitemap
+            key_pages_selectors:
+              - "https://x.ai/blog|main" # xAI Blog
+              - "https://docs.x.ai/|main" # Grok docs root
+            asset_monitor_pages:
+              - "https://grok.x.ai/" # Main Grok interface (might require login, may fail)
+            github_repos:
+              - "xai-org/grok-1" # Grok open release repo
+            research_feeds: [] # Add if available
+
+          # --- Add more domains similarly ---
+          # - domain: "AnotherAI"
+          #   state_file: "state_anotherai.json"
+          #   sitemap_url: "..."
+          #   key_pages_selectors: []
+          #   asset_monitor_pages: []
+          #   github_repos: []
+          #   research_feeds: []
+
     env:
-      # Make the webhook URL available to all steps in this job
-       JOB_DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
+      # Make secrets available to all steps in this job
+      JOB_DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
+      JOB_GITHUB_TOKEN: ${{ secrets.GH_TOKEN || '' }} # Add a GH_TOKEN secret for GitHub API rate limits
 
     steps:
       # Step 1: Get a copy of our repository code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Step 2: Set up the Python language environment
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10' # Specify a version
+          cache: 'pip' # Cache dependencies
 
       # Step 3: Install the tools our Python script needs
       - name: Install dependencies
-        run: pip install requests beautifulsoup4 lxml
+        run: pip install requests beautifulsoup4 lxml PyGithub feedparser
 
-      # Step 4: Run monitoring script
-      - name: Run monitoring script for ${{ matrix.config.domain }}
+      # Step 4: Run the comprehensive monitoring script
+      - name: Run Monitor for ${{ matrix.config.domain }}
         id: monitor_script
         env:
-          # Use matrix variables here
-          SITEMAP_URL: ${{ matrix.config.sitemap_url }}
-          KNOWN_URLS_FILE: ${{ matrix.config.state_file }}
-          # Pass the job-level env var TO the script if the script needs it
-          DISCORD_WEBHOOK_URL: ${{ env.JOB_DISCORD_WEBHOOK_URL }}
+          # Pass the entire matrix config for this job instance as JSON
+          MATRIX_CONFIG_JSON: ${{ toJSON(matrix.config) }}
+          # Pass the specific state file name
+          STATE_FILE: ${{ matrix.config.state_file }}
+          # Pass secrets needed by the script
+          GITHUB_TOKEN: ${{ env.JOB_GITHUB_TOKEN }}
+          # DISCORD_WEBHOOK_URL: ${{ env.JOB_DISCORD_WEBHOOK_URL }} # Script doesn't send directly now
         run: python monitor_script.py
 
-      # Step 5: Send a Discord notification (Force run for testing)
+      # Step 5: Send Consolidated Discord Notification
       - name: Send Discord Notification for ${{ matrix.config.domain }}
-        # TEMPORARY TEST CONDITION: Runs even if count is 0
-        if: steps.monitor_script.outputs.new_urls_count > 0 && env.JOB_DISCORD_WEBHOOK_URL != ''
+        # Run if *any* change was detected AND webhook URL is set
+        if: >
+          (
+            steps.monitor_script.outputs.new_urls_count > 0 ||
+            steps.monitor_script.outputs.changed_pages_count > 0 ||
+            steps.monitor_script.outputs.changed_assets_count > 0 ||
+            steps.monitor_script.outputs.updated_repos_count > 0 ||
+            steps.monitor_script.outputs.new_feed_entries_count > 0
+          ) && env.JOB_DISCORD_WEBHOOK_URL != ''
         run: |
-          # Add the domain name to the notification for clarity
-          curl -H "Content-Type: application/json" \
-               -d '{ "content": "**[TEST RUN] URLs detected on ${{ matrix.config.domain }}** (${{ env.SITEMAP_URL }}):\n```\n${{ steps.monitor_script.outputs.new_urls_list }}\n```" }' \
-               ${{ env.JOB_DISCORD_WEBHOOK_URL }} # Use the job-level env variable
+          # Build the notification message dynamically
+          message="**Changes detected on ${{ matrix.config.domain }}**\n"
+          summary=""
+          details=""
 
-      # Step 6: Commit updated known URLs (Use original condition)
-      - name: Commit updated known URLs for ${{ matrix.config.domain }}
-        # ONLY run if new URLs were actually found
-        if: steps.monitor_script.outputs.new_urls_count > 0
+          # Append details for each type of change found
+          if [[ ${{ steps.monitor_script.outputs.new_urls_count }} -gt 0 ]]; then
+            summary+="- **New Pages:** ${{ steps.monitor_script.outputs.new_urls_count }}\n"
+            details+="**New Pages (${{ steps.monitor_script.outputs.new_urls_count }}):** (From Sitemap: ${{ matrix.config.sitemap_url || 'N/A' }})\n\`\`\`\n${{ steps.monitor_script.outputs.new_urls_list }}\n\`\`\`\n"
+          fi
+          if [[ ${{ steps.monitor_script.outputs.changed_pages_count }} -gt 0 ]]; then
+            summary+="- **Page Content Updates:** ${{ steps.monitor_script.outputs.changed_pages_count }}\n"
+            details+="**Changed Pages (${{ steps.monitor_script.outputs.changed_pages_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.changed_pages_list }}\n\`\`\`\n"
+          fi
+          if [[ ${{ steps.monitor_script.outputs.changed_assets_count }} -gt 0 ]]; then
+            summary+="- **Asset Changes (JS/CSS):** ${{ steps.monitor_script.outputs.changed_assets_count }}\n"
+            details+="**Pages with Changed Assets (${{ steps.monitor_script.outputs.changed_assets_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.changed_assets_list }}\n\`\`\`\n"
+          fi
+          if [[ ${{ steps.monitor_script.outputs.updated_repos_count }} -gt 0 ]]; then
+            summary+="- **GitHub Repo Updates:** ${{ steps.monitor_script.outputs.updated_repos_count }}\n"
+            details+="**Updated Repos (${{ steps.monitor_script.outputs.updated_repos_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.updated_repos_list }}\n\`\`\`\n"
+          fi
+          if [[ ${{ steps.monitor_script.outputs.new_feed_entries_count }} -gt 0 ]]; then
+            summary+="- **New Research/Feed Entries:** ${{ steps.monitor_script.outputs.new_feed_entries_count }}\n"
+            details+="**New Research/Feed Entries (${{ steps.monitor_script.outputs.new_feed_entries_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.new_feed_entries_list }}\n\`\`\`\n"
+          fi
+
+          # Combine summary and details, respecting Discord limits (approx 2000 chars)
+          # If details are too long, just send the summary. This is a basic check.
+          combined_message="${message}${summary}\n${details}"
+          if [[ ${#combined_message} -gt 1900 ]]; then
+             echo "Combined message too long, sending summary only."
+             combined_message="${message}${summary}\n(Full details omitted due to length)"
+          fi
+
+          # Escape the message for JSON payload
+          escaped_message=$(echo "$combined_message" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+
+          echo "Sending notification..."
+          curl -H "Content-Type: application/json" \
+               -d "{ \"content\": \"$escaped_message\" }" \
+               ${{ env.JOB_DISCORD_WEBHOOK_URL }} || echo "Curl command failed"
+
+
+      # Step 6: Commit updated state file
+      - name: Commit updated state for ${{ matrix.config.domain }}
+        # Run if *any* change was detected
+        if: >
+          steps.monitor_script.outputs.new_urls_count > 0 ||
+          steps.monitor_script.outputs.changed_pages_count > 0 ||
+          steps.monitor_script.outputs.changed_assets_count > 0 ||
+          steps.monitor_script.outputs.updated_repos_count > 0 ||
+          steps.monitor_script.outputs.new_feed_entries_count > 0
         run: |
           # Configure Git within the robot's environment
           git config --global user.name 'GitHub Action Bot'
           git config --global user.email 'action@github.com'
-          # Use the matrix variable for the state file name
+          # Add the specific JSON state file
           echo "Adding file: ${{ matrix.config.state_file }}"
           git add ${{ matrix.config.state_file }}
-          # Add domain to commit message for clarity
-          git commit -m "Update known URLs for ${{ matrix.config.domain }}" || echo "No changes to commit"
+          # Create a summary commit message
+          commit_msg="Update state for ${{ matrix.config.domain }}: "
+          commit_msg+="NewURLs(${steps.monitor_script.outputs.new_urls_count}) "
+          commit_msg+="ChangedPages(${steps.monitor_script.outputs.changed_pages_count}) "
+          commit_msg+="ChangedAssets(${steps.monitor_script.outputs.changed_assets_count}) "
+          commit_msg+="UpdatedRepos(${steps.monitor_script.outputs.updated_repos_count}) "
+          commit_msg+="NewFeedItems(${steps.monitor_script.outputs.new_feed_entries_count})"
+
+          echo "Committing changes..."
+          git commit -m "$commit_msg" || echo "No changes staged to commit"
           # Push the changes back to your GitHub repository
+          echo "Pushing changes..."
           git push || echo "Push failed (maybe no changes or conflict)"
