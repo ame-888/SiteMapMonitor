@@ -154,7 +154,7 @@ jobs:
           # DISCORD_WEBHOOK_URL: ${{ env.JOB_DISCORD_WEBHOOK_URL }} # Script doesn't send directly now
         run: python monitor_script.py
 
-      # Step 5: Send Consolidated Discord Notification
+      # Step 5: Send Consolidated Discord Notification (Handles Splitting)
       - name: Send Discord Notification for ${{ matrix.config.domain }}
         # Run if *any* change was detected AND webhook URL is set
         if: >
@@ -165,49 +165,100 @@ jobs:
             steps.monitor_script.outputs.updated_repos_count > 0 ||
             steps.monitor_script.outputs.new_feed_entries_count > 0
           ) && env.JOB_DISCORD_WEBHOOK_URL != ''
+        env: # Pass outputs to this step's environment for reliable access
+          NEW_URLS_COUNT: ${{ steps.monitor_script.outputs.new_urls_count }}
+          NEW_URLS_LIST: ${{ steps.monitor_script.outputs.new_urls_list }}
+          CHANGED_PAGES_COUNT: ${{ steps.monitor_script.outputs.changed_pages_count }}
+          CHANGED_PAGES_LIST: ${{ steps.monitor_script.outputs.changed_pages_list }}
+          CHANGED_ASSETS_COUNT: ${{ steps.monitor_script.outputs.changed_assets_count }}
+          CHANGED_ASSETS_LIST: ${{ steps.monitor_script.outputs.changed_assets_list }}
+          UPDATED_REPOS_COUNT: ${{ steps.monitor_script.outputs.updated_repos_count }}
+          UPDATED_REPOS_LIST: ${{ steps.monitor_script.outputs.updated_repos_list }}
+          NEW_FEED_ENTRIES_COUNT: ${{ steps.monitor_script.outputs.new_feed_entries_count }}
+          NEW_FEED_ENTRIES_LIST: ${{ steps.monitor_script.outputs.new_feed_entries_list }}
+          SITEMAP_URL_CONFIG: ${{ matrix.config.sitemap_url || 'N/A' }}
+          DOMAIN_NAME: ${{ matrix.config.domain }}
+          WEBHOOK_URL: ${{ env.JOB_DISCORD_WEBHOOK_URL }}
         run: |
-          # Build the notification message dynamically
-          message="**Changes detected on ${{ matrix.config.domain }}**\n"
-          summary=""
-          details=""
+          # Function to escape JSON and send message chunk via curl
+          send_discord_chunk() {
+            local message_content="$1"
+            # Escape backslashes, quotes, and newlines for JSON payload
+            # Important: Use printf for robust escaping, especially with backslashes
+            local escaped_message=$(printf '%s' "$message_content" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e ':a;N;$!ba;s/\n/\\n/g')
+            echo "Sending chunk (length ${#message_content})..."
+            # Use printf for the data part to avoid shell interpretation issues
+            curl -s -S -H "Content-Type: application/json" \
+                 -d "$(printf '{"content":"%s"}' "$escaped_message")" \
+                 "$WEBHOOK_URL" || echo "Curl command failed for chunk"
+            # Add a small delay between messages if sending multiple
+            sleep 1
+          }
 
-          # Append details for each type of change found
-          if [[ ${{ steps.monitor_script.outputs.new_urls_count }} -gt 0 ]]; then
-            summary+="- **New Pages:** ${{ steps.monitor_script.outputs.new_urls_count }}\n"
-            details+="**New Pages (${{ steps.monitor_script.outputs.new_urls_count }}):** (From Sitemap: ${{ matrix.config.sitemap_url || 'N/A' }})\n\`\`\`\n${{ steps.monitor_script.outputs.new_urls_list }}\n\`\`\`\n"
+          # --- Build Message Parts ---
+          MAX_CHUNK_LENGTH=1950 # Keep safely below Discord's 2000 char limit
+          current_chunk=""
+          message_parts=() # Array to hold sections
+
+          # 1. Header (Always the start of the first message)
+          header="**Changes detected on $DOMAIN_NAME**\n"
+          current_chunk+="$header"
+
+          # --- Add sections to the array if they exist ---
+          if [[ "$NEW_URLS_COUNT" -gt 0 ]]; then
+            message_parts+=( "**New Pages ($NEW_URLS_COUNT):** (Sitemap: $SITEMAP_URL_CONFIG)\n\`\`\`\n$NEW_URLS_LIST\n\`\`\`\n" )
           fi
-          if [[ ${{ steps.monitor_script.outputs.changed_pages_count }} -gt 0 ]]; then
-            summary+="- **Page Content Updates:** ${{ steps.monitor_script.outputs.changed_pages_count }}\n"
-            details+="**Changed Pages (${{ steps.monitor_script.outputs.changed_pages_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.changed_pages_list }}\n\`\`\`\n"
+          if [[ "$CHANGED_PAGES_COUNT" -gt 0 ]]; then
+            message_parts+=( "**Changed Pages ($CHANGED_PAGES_COUNT):**\n\`\`\`\n$CHANGED_PAGES_LIST\n\`\`\`\n" )
           fi
-          if [[ ${{ steps.monitor_script.outputs.changed_assets_count }} -gt 0 ]]; then
-            summary+="- **Asset Changes (JS/CSS):** ${{ steps.monitor_script.outputs.changed_assets_count }}\n"
-            details+="**Pages with Changed Assets (${{ steps.monitor_script.outputs.changed_assets_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.changed_assets_list }}\n\`\`\`\n"
+          if [[ "$CHANGED_ASSETS_COUNT" -gt 0 ]]; then
+            message_parts+=( "**Pages with Changed Assets ($CHANGED_ASSETS_COUNT):**\n\`\`\`\n$CHANGED_ASSETS_LIST\n\`\`\`\n" )
           fi
-          if [[ ${{ steps.monitor_script.outputs.updated_repos_count }} -gt 0 ]]; then
-            summary+="- **GitHub Repo Updates:** ${{ steps.monitor_script.outputs.updated_repos_count }}\n"
-            details+="**Updated Repos (${{ steps.monitor_script.outputs.updated_repos_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.updated_repos_list }}\n\`\`\`\n"
+          if [[ "$UPDATED_REPOS_COUNT" -gt 0 ]]; then
+            message_parts+=( "**Updated Repos ($UPDATED_REPOS_COUNT):**\n\`\`\`\n$UPDATED_REPOS_LIST\n\`\`\`\n" )
           fi
-          if [[ ${{ steps.monitor_script.outputs.new_feed_entries_count }} -gt 0 ]]; then
-            summary+="- **New Research/Feed Entries:** ${{ steps.monitor_script.outputs.new_feed_entries_count }}\n"
-            details+="**New Research/Feed Entries (${{ steps.monitor_script.outputs.new_feed_entries_count }}):\n\`\`\`\n${{ steps.monitor_script.outputs.new_feed_entries_list }}\n\`\`\`\n"
+          if [[ "$NEW_FEED_ENTRIES_COUNT" -gt 0 ]]; then
+             message_parts+=( "**New Research/Feed Entries ($NEW_FEED_ENTRIES_COUNT):**\n\`\`\`\n$NEW_FEED_ENTRIES_LIST\n\`\`\`\n" )
           fi
 
-          # Combine summary and details, respecting Discord limits (approx 2000 chars)
-          # If details are too long, just send the summary. This is a basic check.
-          combined_message="${message}${summary}\n${details}"
-          if [[ ${#combined_message} -gt 1900 ]]; then
-             echo "Combined message too long, sending summary only."
-             combined_message="${message}${summary}\n(Full details omitted due to length)"
+          # --- Iterate through parts and send chunks ---
+          initial_chunk=true
+          for part in "${message_parts[@]}"; do
+            # Check if adding the *next* part exceeds the limit
+            if [[ $(( ${#current_chunk} + ${#part} )) -gt $MAX_CHUNK_LENGTH ]] && [[ "$initial_chunk" = false ]]; then
+              # If it exceeds, send the current chunk *first*
+              send_discord_chunk "$current_chunk"
+              # Start the new chunk *without* the main header, but maybe a continuation marker
+              current_chunk="(cont.) **$DOMAIN_NAME changes:**\n" # Use a shorter header for subsequent chunks
+            fi
+
+            # Now, add the part to the current chunk
+            # Check if the part *itself* is too long (edge case)
+            if [[ ${#part} -gt $MAX_CHUNK_LENGTH ]]; then
+                # Part is too long even on its own. Send a truncated version.
+                local truncated_part="${part:0:$((MAX_CHUNK_LENGTH-50))}...\n\`\`\`\n(Section truncated)"
+                # If current_chunk has content (the header), send it first
+                if [[ ${#current_chunk} -gt 0 ]] && [[ "$current_chunk" != "$header" ]] && [[ "$current_chunk" != "(cont.) **$DOMAIN_NAME changes:**\n" ]]; then
+                   send_discord_chunk "$current_chunk"
+                fi
+                # Send the truncated part as its own message
+                send_discord_chunk "$truncated_part"
+                # Reset current chunk to continuation header
+                current_chunk="(cont.) **$DOMAIN_NAME changes:**\n"
+            else
+                # Part fits (maybe with existing content), append it
+                current_chunk+="$part"
+                initial_chunk=false # We've added at least one part
+            fi
+          done
+
+          # --- Send any remaining message part ---
+          # Check if current_chunk contains more than just an initial header
+          if [[ "$current_chunk" != "$header" ]] && [[ "$current_chunk" != "(cont.) **$DOMAIN_NAME changes:**\n" ]]; then
+            send_discord_chunk "$current_chunk"
           fi
 
-          # Escape the message for JSON payload
-          escaped_message=$(echo "$combined_message" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-
-          echo "Sending notification..."
-          curl -H "Content-Type: application/json" \
-               -d "{ \"content\": \"$escaped_message\" }" \
-               ${{ env.JOB_DISCORD_WEBHOOK_URL }} || echo "Curl command failed"
+          echo "Notifications sent."
 
 
       # Step 6: Commit updated state file
