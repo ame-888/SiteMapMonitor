@@ -219,23 +219,41 @@ jobs:
           steps.monitor_script.outputs.changed_assets_count > 0 ||
           steps.monitor_script.outputs.updated_repos_count > 0 ||
           steps.monitor_script.outputs.new_feed_entries_count > 0
+        env: # Define ENV vars specifically for this step using the outputs
+          # Map outputs to environment variables for safer shell access
+          NEW_URLS_COUNT: ${{ steps.monitor_script.outputs.new_urls_count }}
+          CHANGED_PAGES_COUNT: ${{ steps.monitor_script.outputs.changed_pages_count }}
+          CHANGED_ASSETS_COUNT: ${{ steps.monitor_script.outputs.changed_assets_count }}
+          UPDATED_REPOS_COUNT: ${{ steps.monitor_script.outputs.updated_repos_count }}
+          NEW_FEED_ENTRIES_COUNT: ${{ steps.monitor_script.outputs.new_feed_entries_count }}
+          # Also map matrix variables needed in the script to ENV vars
+          DOMAIN_NAME: ${{ matrix.config.domain }}
+          STATE_FILE_NAME: ${{ matrix.config.state_file }}
         run: |
           # Configure Git within the robot's environment
           git config --global user.name 'GitHub Action Bot'
           git config --global user.email 'action@github.com'
-          # Add the specific JSON state file
-          echo "Adding file: ${{ matrix.config.state_file }}"
-          git add ${{ matrix.config.state_file }}
-          # Create a summary commit message
-          commit_msg="Update state for ${{ matrix.config.domain }}: "
-          commit_msg+="NewURLs(${steps.monitor_script.outputs.new_urls_count}) "
-          commit_msg+="ChangedPages(${steps.monitor_script.outputs.changed_pages_count}) "
-          commit_msg+="ChangedAssets(${steps.monitor_script.outputs.changed_assets_count}) "
-          commit_msg+="UpdatedRepos(${steps.monitor_script.outputs.updated_repos_count}) "
-          commit_msg+="NewFeedItems(${steps.monitor_script.outputs.new_feed_entries_count})"
 
-          echo "Committing changes..."
+          # Add the specific JSON state file using the ENV var (quote for safety)
+          echo "Adding file: $STATE_FILE_NAME"
+          git add "$STATE_FILE_NAME"
+
+          # Create a summary commit message using standard shell variables
+          # Initialize message
+          commit_msg="Update state for $DOMAIN_NAME: "
+          # Append counts using the ENV vars defined above
+          commit_msg+="NewURLs($NEW_URLS_COUNT) "
+          commit_msg+="ChangedPages($CHANGED_PAGES_COUNT) "
+          commit_msg+="ChangedAssets($CHANGED_ASSETS_COUNT) "
+          commit_msg+="UpdatedRepos($UPDATED_REPOS_COUNT) "
+          commit_msg+="NewFeedItems($NEW_FEED_ENTRIES_COUNT)"
+
+          echo "Committing changes with message: $commit_msg"
+          # Use the constructed message. Quote it properly for git.
+          # The || handles the case where 'git add' staged nothing, preventing failure.
           git commit -m "$commit_msg" || echo "No changes staged to commit"
+
           # Push the changes back to your GitHub repository
           echo "Pushing changes..."
+          # The || provides graceful handling if the push fails (e.g., rare conflict)
           git push || echo "Push failed (maybe no changes or conflict)"
