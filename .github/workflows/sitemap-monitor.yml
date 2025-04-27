@@ -18,64 +18,60 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Allows other domains to continue if one fails
-      matrix:
+matrix:
         config:
           # --- OpenAI ---
           - domain: "OpenAI"
-            state_file: "state_openai.json" # Using JSON for richer state
+            state_file: "state_openai.json"
             sitemap_url: "https://openai.com/sitemap.xml"
-            key_pages_selectors: # Format: "URL|CSS Selector for main content"
-              - "https://openai.com/blog|main" # Monitor the main blog feed container
-              - "https://openai.com/pricing|main" # Monitor pricing page content
-              - "https://platform.openai.com/docs/models|main" # Monitor models documentation page
-            asset_monitor_pages: # Pages where we check for new JS/CSS assets
+            key_pages_selectors:
+              - "https://openai.com/blog|main"
+              - "https://openai.com/pricing|main"
+              - "https://platform.openai.com/docs/models|main"
+            asset_monitor_pages:
               - "https://platform.openai.com/"
-            github_repos: # Format: "owner/repo"
+            github_repos:
               - "openai/openai-python"
               - "openai/openai-cookbook"
-            research_feeds: # RSS/Atom feed URLs
+            research_feeds:
               - "https://openai.com/research/rss.xml"
 
           # --- Google AI / DeepMind ---
           - domain: "GoogleAI_DeepMind"
             state_file: "state_googleai_deepmind.json"
-            sitemap_url: "https://deepmind.google/sitemap.xml" # DeepMind Site
-            # Note: ai.google.dev sitemap might be included or separate
+            sitemap_url: "https://deepmind.google/sitemap.xml"
             key_pages_selectors:
               - "https://deepmind.google/discover/blog|main"
-              - "https://ai.google.dev/blog|main" # Google AI Dev Blog
-              - "https://ai.google.dev/docs|main" # Google AI Dev Docs root
+              - "https://ai.google/discover/|main" # FIXED URL
+              - "https://ai.google/docs|main" # FIXED URL
             asset_monitor_pages:
-              - "https://ai.google.dev/"
+              - "https://ai.google/" # FIXED URL
             github_repos:
-              - "google-deepmind/graphcast" # Example DeepMind repo
-              - "google-gemini/generative-ai-python" # Example Google AI repo
-            research_feeds:
-              - "https://deepmind.google/discover/blog.rss"
-              - "https://developers.googleblog.com/feeds/posts/default/-/AI%20%26%20Machine%20Learning" # Google Dev Blog AI Tag Feed
+              - "google-deepmind/graphcast"
+              - "google-gemini/generative-ai-python"
+            research_feeds: [] # FIXED - Removed broken URLs
 
           # --- Anthropic ---
           - domain: "Anthropic"
             state_file: "state_anthropic.json"
-            sitemap_url: "https://docs.anthropic.com/sitemap.xml"
+            sitemap_url: "https://www.anthropic.com/sitemap.xml" # Use main site sitemap
             key_pages_selectors:
-              - "https://docs.anthropic.com/claude/reference/getting-started-with-the-api|main" # API Docs Example
-              - "https://www.anthropic.com/news|div[role='list']" # News page list container
+              - "https://docs.anthropic.com/claude/reference/getting-started-with-the-api|main"
+              - "https://www.anthropic.com/news|div[role='list']"
             asset_monitor_pages:
-              - "https://console.anthropic.com/" # Check assets on the console login/app page
+              - "https://console.anthropic.com/"
             github_repos:
               - "anthropics/anthropic-sdk-python"
-            research_feeds: [] # Add if they create a research feed
+            research_feeds: []
 
           # --- Meta (Llama) ---
-          # Note: Llama.com sitemap may not exist or be useful; focus on other Meta AI sources
           - domain: "MetaAI_Llama"
             state_file: "state_metaai_llama.json"
-            sitemap_url: "https://ai.meta.com/blog/sitemap-posts.xml" # Meta AI Blog Sitemap
+            sitemap_url: "https://ai.meta.com/sitemap.xml" # Main Meta AI sitemap
             key_pages_selectors:
               - "https://ai.meta.com/blog/|main"
-              - "https://ai.meta.com/research/publications/|main" # Research pubs page
-              - "https://llama.meta.com/docs/get-started/|main" # Llama docs example
+              - "https://ai.meta.com/research/publications/|main"
+              - "https://llama.meta.com/docs/get-started/|main"
             asset_monitor_pages:
               - "https://llama.meta.com/"
             github_repos:
@@ -87,29 +83,29 @@ jobs:
           # --- Mistral AI ---
           - domain: "MistralAI"
             state_file: "state_mistralai.json"
-            sitemap_url: "https://docs.mistral.ai/sitemap.xml"
+            sitemap_url: "https://mistral.ai/sitemap.xml" # Main site sitemap
             key_pages_selectors:
-              - "https://mistral.ai/news/|main" # Mistral News
-              - "https://docs.mistral.ai/getting-started/quickstart/|main" # Docs example
+              - "https://mistral.ai/news/|main"
+              - "https://docs.mistral.ai/getting-started/quickstart/|main"
             asset_monitor_pages:
-              - "https://console.mistral.ai/" # Check assets on console
+              - "https://console.mistral.ai/"
             github_repos:
-              - "mistralai/mistral-src" # Main models repo
-              - "mistralai/client-python" # Python client
-            research_feeds: [] # Add if available
+              - "mistralai/mistral-src"
+              - "mistralai/client-python"
+            research_feeds: []
 
           # --- Grok (xAI) ---
           - domain: "Grok_xAI"
             state_file: "state_grok_xai.json"
-            sitemap_url: "https://docs.x.ai/sitemap.xml" # Docs sitemap
+            sitemap_url: "https://docs.x.ai/sitemap.xml" # Docs sitemap (most reliable)
             key_pages_selectors:
-              - "https://x.ai/blog|main" # xAI Blog
-              - "https://docs.x.ai/|main" # Grok docs root
+              - "https://x.ai/blog|main"
+              - "https://docs.x.ai/|main"
             asset_monitor_pages:
-              - "https://grok.x.ai/" # Main Grok interface (might require login, may fail)
+              - "https://grok.x.ai/"
             github_repos:
-              - "xai-org/grok-1" # Grok open release repo
-            research_feeds: [] # Add if available
+              - "xai-org/grok-1"
+            research_feeds: []
 
           # --- Add more domains similarly ---
           # - domain: "AnotherAI"
@@ -121,11 +117,13 @@ jobs:
           #   research_feeds: []
 
     env:
-      # Make secrets available to all steps in this job
+      # Contents of env: are indented FURTHER (e.g., 2 spaces)
       JOB_DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || '' }}
       JOB_GITHUB_TOKEN: ${{ secrets.GH_TOKEN || '' }} # Add a GH_TOKEN secret for GitHub API rate limits
 
+    # steps: block STARTS at the SAME indentation level as strategy: and env:
     steps:
+      # Contents of steps: start with '-' and are indented FURTHER
       # Step 1: Get a copy of our repository code
       - name: Checkout code
         uses: actions/checkout@v4
