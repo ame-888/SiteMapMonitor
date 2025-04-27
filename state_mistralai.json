@@ -82,6 +82,9 @@
       "https://console.mistral.ai/theme.css"
     ]
   },
-  "github_repo_state": {},
+  "github_repo_state": {
+    "mistralai/mistral-src": "6eb35510403825cfb430b0004443053e8c4b70dc",
+    "mistralai/client-python": "bc4adf335968c8a272e1ab7da8461c9943d8e701"
+  },
   "feed_state": {}
 }
