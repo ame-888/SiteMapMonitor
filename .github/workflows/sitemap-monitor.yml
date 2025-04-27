@@ -261,7 +261,7 @@ jobs:
           echo "Notifications sent."
 
 
-      # Step 6: Commit updated state file
+# Step 6: Commit updated state file
       - name: Commit updated state for ${{ matrix.config.domain }}
         # Run if *any* change was detected
         if: >
@@ -295,7 +295,15 @@ jobs:
           echo "Committing changes with message: $commit_msg"
           git commit -m "$commit_msg" || echo "No changes staged to commit"
 
+          # --- ADD THIS SECTION ---
+          echo "Pulling remote changes with rebase..."
+          # Attempt to pull and rebase the local commit on top of remote changes.
+          # The || echo part handles cases where pull fails (e.g., complex conflicts)
+          # without necessarily stopping the script here, but the push might still fail then.
+          # A rebase conflict WILL cause the step to fail later if not resolved.
+          git pull --rebase || echo "Pull/rebase failed (maybe conflicts?)"
+          # --- END OF ADDED SECTION ---
+
           # Push the changes back to your GitHub repository
           echo "Pushing changes..."
-          # REMOVED || echo "Push failed..." - Let the push failure cause the step to fail
-          git push
+          git push # Keep this line without the || echo fallback
