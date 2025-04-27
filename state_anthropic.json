@@ -2132,6 +2132,8 @@
   "asset_map": {
     "https://console.anthropic.com/": []
   },
-  "github_repo_state": {},
+  "github_repo_state": {
+    "anthropics/anthropic-sdk-python": "f5bdf5137cc3da4d3663aedb8c63d54652981c3b"
+  },
   "feed_state": {}
 }
