@@ -28,7 +28,10 @@
       "https://static.xx.fbcdn.net/rsrc.php/v5/yz/l/0,cross/dNPZLoHytPp.css"
     ]
   },
-  "github_repo_state": {},
+  "github_repo_state": {
+    "meta-llama/llama": "689c7f261b9c5514636ecc3c5fefefcbb3e6eed7",
+    "facebookresearch/llama-recipes": "df0b435930f7ca1f1d18454e37749308b6340ae2"
+  },
   "feed_state": {
     "https://ai.meta.com/blog/rss/": null
   }
