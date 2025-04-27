@@ -622,7 +622,10 @@
       "https://www.gstatic.com/devrel-devsite/prod/v18af98722840dca56faefae94257d94871f07ae68e6f6225c2963b4f21ad2128/googledevai/css/dark-theme.css"
     ]
   },
-  "github_repo_state": {},
+  "github_repo_state": {
+    "google-deepmind/graphcast": "7077d40a36db6541e3ed72ccaed1c0d202fa6014",
+    "google-gemini/generative-ai-python": "f5ac4edfb8ba67384e767b257079fb3038ac1ab2"
+  },
   "feed_state": {
     "https://deepmind.google/discover/blog.rss": null,
     "https://developers.googleblog.com/feeds/posts/default/-/AI%20%26%20Machine%20Learning": null
